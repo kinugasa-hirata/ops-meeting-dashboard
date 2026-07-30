@@ -1,4 +1,4 @@
-import { listRecentWeeks } from "@/lib/notion";
+import { listRecentWeeks, WeekPage } from "@/lib/notion";
 
 // ビルド時にNotionへ接続しようとして環境変数不足で失敗するのを防ぐため、
 // このページは常にリクエスト時に描画する（ビルド時の静的生成をしない）。
@@ -24,7 +24,7 @@ function StatusBadge({ status }: { status: string | null }) {
 }
 
 export default async function DashboardPage() {
-  let weeks: Awaited<ReturnType<typeof listRecentWeeks>> = [];
+  let weeks: WeekPage[] = [];
   let loadError: string | null = null;
 
   try {
