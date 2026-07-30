@@ -100,7 +100,7 @@ export default async function DashboardPage() {
             </details>
           )}
 
-          
+          <a
             href={w.url}
             target="_blank"
             rel="noreferrer"
