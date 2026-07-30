@@ -1,6 +1,8 @@
 import { listRecentWeeks } from "@/lib/notion";
 
-export const revalidate = 60; // 60秒ごとに再取得（管理者は呼び出すだけでよい設計）
+// ビルド時にNotionへ接続しようとして環境変数不足で失敗するのを防ぐため、
+// このページは常にリクエスト時に描画する（ビルド時の静的生成をしない）。
+export const dynamic = "force-dynamic";
 
 function StatusBadge({ status }: { status: string | null }) {
   const color = status === "完了" ? "#639922" : "#D85A30";
@@ -22,7 +24,14 @@ function StatusBadge({ status }: { status: string | null }) {
 }
 
 export default async function DashboardPage() {
-  const weeks = await listRecentWeeks(12);
+  let weeks: Awaited<ReturnType<typeof listRecentWeeks>> = [];
+  let loadError: string | null = null;
+
+  try {
+    weeks = await listRecentWeeks(12);
+  } catch (err: any) {
+    loadError = err?.message ?? "不明なエラー";
+  }
 
   return (
     <main style={{ maxWidth: 860, margin: "0 auto", padding: "32px 20px" }}>
@@ -30,6 +39,27 @@ export default async function DashboardPage() {
       <p style={{ color: "#5F5E5A", fontSize: 14, marginBottom: 28 }}>
         Notionの「Ops Meeting Log」を自動取得しています。更新はGmail/Notionのイベントを受けて裏側で行われます。
       </p>
+
+      {loadError && (
+        <section
+          style={{
+            background: "#FAECE7",
+            border: "1px solid #F0997B",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            color: "#712B13",
+            fontSize: 13,
+          }}
+        >
+          Notionからの取得に失敗しました: {loadError}
+          <br />
+          Vercelの Project Settings → Environment Variables に
+          `NOTION_API_KEY` / `NOTION_DATABASE_ID` が正しく設定されているか、
+          Notion側で「Ops Assistant」インテグレーションがこのデータベースに
+          接続(Connections)されているかを確認してください。
+        </section>
+      )}
 
       {weeks.map((w) => (
         <section
@@ -70,7 +100,7 @@ export default async function DashboardPage() {
             </details>
           )}
 
-          <a
+          
             href={w.url}
             target="_blank"
             rel="noreferrer"
@@ -80,6 +110,10 @@ export default async function DashboardPage() {
           </a>
         </section>
       ))}
+
+      {!loadError && weeks.length === 0 && (
+        <p style={{ color: "#888780", fontSize: 14 }}>まだ週のページがありません。</p>
+      )}
     </main>
   );
 }
